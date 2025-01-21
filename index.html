@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سحب عشوائي للعملاء</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            text-align: center;
+            direction: rtl;
+            font-family: Arial, sans-serif;
+            background-image: url('My project-4 (1).png');
+            background-size: cover;
+            background-position: center;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: rgba(250, 156, 40, 0.9);
+            padding: 20px;
+            position: relative;
+        }
+
+        header img {
+            width: 80px;
+            height: 80px;
+            position: absolute;
+            left: 20px;
+            top: 10px;
+        }
+
+        header h1 {
+            color: white;
+            margin: 0;
+            font-size: 28px;
+        }
+
+        textarea {
+            width: 80%;
+            max-width: 500px;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #FA9C28;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #F87C1A;
+            transform: scale(1.1);
+        }
+
+        #winner {
+            font-size: 28px;
+            font-weight: bold;
+            color: #FFFFFF;
+            margin-top: 20px;
+            background-color: #FA9C28;
+            padding: 15px;
+            border: 3px solid #FFFFFF;
+            border-radius: 10px;
+            display: inline-block;
+            animation: fadeIn 1s ease-in-out, pulse 1.5s infinite;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #namesList {
+            margin: 20px 0;
+            font-size: 18px;
+            color: #333;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <header>
+               <h1>سحب عشوائي لعملاء شهم</h1>
+    </header>
+
+    <div id="page1">
+        <textarea id="names" placeholder="أدخل أسماء العملاء هنا، كل اسم في سطر جديد"></textarea>
+        <br>
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .docx" />
+        <br><br>
+        <button onclick="goToDrawPage()">التالي</button>
+    </div>
+
+    <div id="page2" class="hidden">
+        <div id="namesList"></div>
+        <button onclick="startRandomizing()">إبدأ السحب</button>
+        <h2 id="winner" style="display: none;"></h2>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById("fileInput");
+        const namesTextarea = document.getElementById("names");
+        const namesList = document.getElementById("namesList");
+        const page1 = document.getElementById("page1");
+        const page2 = document.getElementById("page2");
+        let interval;
+
+        // قراءة ملف Excel
+        fileInput.addEventListener("change", (event) => {
+            const file = event.target.files[0];
+            if (file && file.name.endsWith(".xlsx")) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: "array" });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const names = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }).flat();
+                    namesTextarea.value = names.join("\n");
+                };
+                reader.readAsArrayBuffer(file);
+            } else if (file && file.name.endsWith(".docx")) {
+                alert("دعم ملفات Word سيُضاف قريبًا!");
+            } else {
+                alert("يرجى اختيار ملف Excel (.xlsx) أو Word (.docx)!");
+            }
+        });
+
+        // الانتقال إلى صفحة السحب
+        function goToDrawPage() {
+            const names = namesTextarea.value.trim().split("\n");
+            if (names.length > 0 && names[0] !== "") {
+                namesList.innerHTML = names.map(name => `<div>${name}</div>`).join("");
+                page1.classList.add("hidden");
+                page2.classList.remove("hidden");
+            } else {
+                alert("يرجى إدخال أسماء العملاء!");
+            }
+        }
+
+        // عرض الأسماء بشكل عشوائي والتوقف عند الفائز
+        function startRandomizing() {
+            const names = namesTextarea.value.trim().split("\n");
+            const winnerElement = document.getElementById("winner");
+
+            if (names.length > 0 && names[0] !== "") {
+            let winner = null; // متغير لتخزين الفائز النهائي
+            interval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * names.length);
+                winner = names[randomIndex]; // تخزين الاسم العشوائي الحالي
+                namesList.innerHTML = `<div>${winner}</div>`;
+            }, 100);
+
+setTimeout(() => {
+                clearInterval(interval);
+                winnerElement.innerText = `🎉 الفائز هو: ${winner} 🎉`; // عرض الاسم المخزن
+                winnerElement.style.display = "block";
+            }, 5000);
+        } else {
+            alert("يرجى إدخال أسماء العملاء!");
+        }
+    }
+</script>
+</body>
+</html>
+
